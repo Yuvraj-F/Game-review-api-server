@@ -46,5 +46,17 @@ const getByEmail = async(email:string): Promise<User[]> => {
     }
 }
 
+const login = async(email:string, token:string): Promise<void> => {
+    Logger.info(`Logging in user ${email}`);
 
-export{insert, getOne, getAll, getByEmail};
+    const query = `update user set auth_token=? where email=?`;
+    try {
+        await getPool().query(query, [token, email]);
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+
+export{insert, getOne, getAll, getByEmail, login};
