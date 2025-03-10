@@ -1,11 +1,11 @@
+import bcrypt from 'bcrypt';
+
 const hash = async (password: string): Promise<string> => {
-    // todo: password hashing and comparing are left to you
-    return password;
+    return bcrypt.hash(password, 10);
 }
 
 const compare = async (password: string, comp: string): Promise<boolean> => {
-    // todo: password hashing and comparing are left to you
-    return password === comp
+    return bcrypt.compare(password, comp);
 }
 
 export {hash, compare}
