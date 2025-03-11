@@ -105,6 +105,12 @@ const login = async (req: Request, res: Response): Promise<void> => {
 }
 
 const logout = async (req: Request, res: Response): Promise<void> => {
+    Logger.info(`POST logging out user`);
+
+    const token = req.headers["x-authorization"];
+
+    // authenticate user
+
     try {
         res.statusMessage = "Not Implemented";
         res.status(501).send();
