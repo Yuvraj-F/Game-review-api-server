@@ -41,8 +41,22 @@ const getAll = async(): Promise<User[]> => {
     }
 }
 
-const alter = async(firstName:string, lastName:string, email:string, password:string): Promise<ResultSetHeader> => {
-    return;
+const alter = async(id:number, attributes:string[], values:string[]): Promise<void> => {
+    Logger.info(`updating user details for user ${id} in the database`);
+
+    let query = `update user set `;
+    let i;
+    for (i=0; i<attributes.length-1; i++) {
+        query += `${attributes[i]} = ?, `;
+    }
+    query += `${attributes[i]} = ? where id = ?`;
+    try {
+        await getPool().query(query, [...values, id]);
+        return;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
 }
 
 const getByEmail = async(email:string): Promise<User[]> => {
@@ -96,4 +110,4 @@ const authenticate = async(token:string): Promise<User[]> => {
 }
 
 
-export{insert, getOne, getAll, getByEmail, login, logout, authenticate};
+export{insert, getOne, getAll, alter, getByEmail, login, logout, authenticate};

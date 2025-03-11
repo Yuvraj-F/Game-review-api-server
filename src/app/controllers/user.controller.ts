@@ -32,7 +32,7 @@ const register = async (req: Request, res: Response): Promise<void> => {
         }
     } catch (err) {
         Logger.error(err);
-        res.statusMessage = `ERROR retrieving email ${email}: ${err}`
+        res.statusMessage = `ERROR verifying email ${email} for registration: ${err}`
         res.status(500).send();
         return;
     }
@@ -131,6 +131,7 @@ const logout = async (req: Request, res: Response): Promise<void> => {
 const view = async (req: Request, res: Response): Promise<void> => {
     Logger.info(`GET user ${req.params.id}`);
 
+    // validate id parameter
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
         res.statusMessage = `Bad Request: Id must be an integer`;
@@ -154,10 +155,14 @@ const view = async (req: Request, res: Response): Promise<void> => {
         const email = user.email;
 
         // authenticate user to decide if email should be part of the response
-        if ((await isAuthenticated(req)) && user.auth_token === (await getToken(req))) {
+        const isAuth = await isAuthenticated(req);
+        const tokenMatches = user.auth_token === await getToken(req);
+        if (isAuth && tokenMatches) {
             res.status(200).send({"firstName": firstName, "lastName": lastName, "email": email});
+            return;
         } else {
             res.status(200).send({"firstName": firstName, "lastName": lastName});
+            return;
         }
     } catch (err) {
         Logger.error(err);
@@ -168,10 +173,110 @@ const view = async (req: Request, res: Response): Promise<void> => {
 }
 
 const update = async (req: Request, res: Response): Promise<void> => {
-    try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+    Logger.info(`PATCH user details for user ${req.params.id}`);
+
+    // validate id parameter
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
         return;
+    }
+
+    // validate request body
+    const validation = await validate(
+        schemas.user_edit,
+        req.body
+    );
+    if (validation !== true) {
+        res.statusMessage = `Bad Request: ${validation.toString()}`;
+        res.status(400).send();
+        return;
+    }
+
+    try {
+        // get user
+        let user;
+        const userList = await User.getOne(id);
+        if (userList.length !== 0) {
+            user = userList[0];
+        } else {
+            res.statusMessage = `Not Found. No user with specified id: ${id}`;
+            res.status(404).send();
+            return;
+        }
+
+        // authenticate user
+        const isAuth = await isAuthenticated(req);
+        const tokenMatches = user.auth_token === await getToken(req);
+        if (!isAuth) {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+        if (!tokenMatches) {
+            res.statusMessage = `Forbidden. Cannot edit another user's information`;
+            res.status(403).send();
+            return;
+        }
+
+        // create arrays that contain the attribute names and values
+        const attributes = []
+        const values = []
+
+        // check first name
+        if ("firstName" in req.body) {
+            attributes.push("first_name");
+            values.push(req.body.firstName);
+        }
+
+        // check last name
+        if ("lastName" in req.body) {
+            attributes.push("last_name");
+            values.push(req.body.lastName);
+        }
+
+        // check email already exists in database
+        if ("email" in req.body) {
+            attributes.push("email");
+            const email = req.body.email;
+            const result = await User.getByEmail(email);
+            if (result.length !== 0) {
+                res.statusMessage = `Forbidden. Email already in use: ${email}`;
+                res.status(403).send();
+                return;
+            } else {
+                values.push(email);
+            }
+        }
+
+        // check password
+        if ("password" in req.body) {
+            const password = req.body.password;
+            const currentPassword = req.body.currentPassword;
+            if (!currentPassword) {
+                res.statusMessage = `Bad Request: Cannot update password without currentPassword`;
+                res.status(400).send();
+                return;
+            }
+            if (!await compare(currentPassword, user.password)) {
+                res.statusMessage = `Invalid currentPassword`;
+                res.status(401).send();
+                return;
+            }
+            if (password === currentPassword) {
+                res.statusMessage = `Forbidden. New password cannot be the same as old password`;
+                res.status(403).send();
+                return;
+            }
+            attributes.push("password");
+            values.push(password);
+        }
+
+        await User.alter(id, attributes, values);
+        res.status(200).send();
+        return;
+
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -189,7 +294,7 @@ async function getToken(req: Request): Promise<string> {
 }
 
 /**
- * Checks if user is authenticated or not
+ * Checks if user is authenticated or not by comparing auth token with the database
  * @param req the http request to process
  * @return True if user is authenticated. False otherwise
  */
