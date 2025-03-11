@@ -7,17 +7,25 @@ const insert = async(email:string, firstName:string, lastName:string, password:s
 
     const query = `insert into user (email, first_name, last_name, password) values (?,?,?,?)`;
     try {
-        const [result] = await getPool().query(query, [email, firstName, lastName, password]);
-        return result;
+        const [rows] = await getPool().query(query, [email, firstName, lastName, password]);
+        return rows;
     } catch (err) {
         Logger.error(err.sql);
         throw err;
     }
 }
 
-const getOne = async(): Promise<User[]> => {
-    Logger.info(``);
-    return;
+const getOne = async(id:number): Promise<User[]> => {
+    Logger.info(`Getting user ${id} from the database`);
+
+    const query = `select * from user where id=?`;
+    try {
+        const [rows] = await getPool().query(query, [id]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
 }
 
 const getAll = async(): Promise<User[]> => {
@@ -33,13 +41,17 @@ const getAll = async(): Promise<User[]> => {
     }
 }
 
+const alter = async(firstName:string, lastName:string, email:string, password:string): Promise<ResultSetHeader> => {
+    return;
+}
+
 const getByEmail = async(email:string): Promise<User[]> => {
     Logger.info(`Getting user by email: ${email}`);
 
     const query = `select * from user where email=?`;
     try {
-        const [user] = await getPool().query(query, email);
-        return user;
+        const [rows] = await getPool().query(query, email);
+        return rows;
     } catch (err) {
         Logger.error(err.sql);
         throw err;
@@ -58,5 +70,30 @@ const login = async(email:string, token:string): Promise<void> => {
     }
 }
 
+const logout = async(token:string): Promise<void> => {
+    Logger.info(`Logging out user`);
 
-export{insert, getOne, getAll, getByEmail, login};
+    const query = `update user set auth_token=NULL where auth_token=?`;
+    try {
+        await getPool().query(query, [token]);
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const authenticate = async(token:string): Promise<User[]> => {
+    Logger.info(`Authenticating user`);
+
+    const query = `select * from user where auth_token=?`;
+    try {
+        const [rows] = await getPool().query(query, [token]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+
+export{insert, getOne, getAll, getByEmail, login, logout, authenticate};

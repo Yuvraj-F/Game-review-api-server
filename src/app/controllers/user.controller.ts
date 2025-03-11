@@ -107,28 +107,63 @@ const login = async (req: Request, res: Response): Promise<void> => {
 const logout = async (req: Request, res: Response): Promise<void> => {
     Logger.info(`POST logging out user`);
 
-    const token = req.headers["x-authorization"];
-
-    // authenticate user
-
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        if (!await isAuthenticated(req)) {
+            res.statusMessage = `Unauthorized. Cannot log out if you are not authenticated`;
+            res.status(401).send();
+            return;
+        }
+
+        const token = await getToken(req);
+        await User.logout(token);
+        res.status(200).send();
+        return;
+
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
         res.status(500).send();
+        return;
     }
 }
 
 const view = async (req: Request, res: Response): Promise<void> => {
+    Logger.info(`GET user ${req.params.id}`);
+
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        let user;
+        const userList = await User.getOne(id);
+        if (userList.length !== 0) {
+            user = userList[0];
+        } else {
+            res.statusMessage = `Not Found. No user with specified id: ${id}`;
+            res.status(404).send();
+            return;
+        }
+
+        const firstName = user.first_name;
+        const lastName = user.last_name;
+        const email = user.email;
+
+        // authenticate user to decide if email should be part of the response
+        if ((await isAuthenticated(req)) && user.auth_token === (await getToken(req))) {
+            res.status(200).send({"firstName": firstName, "lastName": lastName, "email": email});
+        } else {
+            res.status(200).send({"firstName": firstName, "lastName": lastName});
+        }
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
         res.status(500).send();
+        return;
     }
 }
 
@@ -136,10 +171,36 @@ const update = async (req: Request, res: Response): Promise<void> => {
     try {
         res.statusMessage = "Not Implemented";
         res.status(501).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
         res.status(500).send();
+        return;
+    }
+}
+
+/**
+ * extracts the token from the X-Authorization field in the request header
+ * @param req the http request to process
+ */
+async function getToken(req: Request): Promise<string> {
+    return Array.isArray(req.headers["x-authorization"])? req.headers["x-authorization"][0] : req.headers["x-authorization"];
+}
+
+/**
+ * Checks if user is authenticated or not
+ * @param req the http request to process
+ * @return True if user is authenticated. False otherwise
+ */
+async function isAuthenticated(req: Request): Promise<boolean> {
+    const token = await getToken(req);
+    try {
+        const user = await User.authenticate(token);
+        return user.length !== 0;
+    } catch (err) {
+        Logger.error(err);
+        throw err;
     }
 }
 
