@@ -2,15 +2,15 @@ type User = {
 
     id: number,
 
-    email: string
+    email: string,
 
-    first_name: string
+    first_name: string,
 
-    last_name: string
+    last_name: string,
 
-    image_filename: string
+    image_filename: string,
 
-    password: string
+    password: string,
 
     auth_token: string
 }
