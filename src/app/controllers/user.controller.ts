@@ -309,4 +309,19 @@ async function isAuthenticated(req: Request): Promise<boolean> {
     }
 }
 
-export {register, login, logout, view, update}
+/**
+ * If current user is authenticated retrieves user details
+ * @param req the http request to process
+ * @return Authenticated user
+ */
+async function getAuthenticatedUser(req: Request): Promise<User[]> {
+    const token = await getToken(req);
+    try {
+        return await User.authenticate(token);
+    } catch (err) {
+        Logger.error(err);
+        throw err;
+    }
+}
+
+export {register, login, logout, view, update, isAuthenticated, getAuthenticatedUser}

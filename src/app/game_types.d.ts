@@ -20,3 +20,24 @@ type Game = {
 
     platformIds: number[]
 }
+
+type GameQuery = {
+
+    q: string,
+
+    genreIds: number[],
+
+    price: number,
+
+    platformIds: number[],
+
+    creatorId: number,
+
+    reviewerId: number,
+
+    sortBy: string,
+
+    ownedByMe: boolean,
+
+    wishlistedByMe: boolean,
+}
