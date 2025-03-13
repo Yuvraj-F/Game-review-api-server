@@ -122,19 +122,31 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         }
 
         const result = await Game.getAll(params);
-
+        const resultCount = result.length;
 
         let startIndex = 0;
         if (req.query.startIndex !== undefined && typeof req.query.startIndex === 'string') {
             startIndex = parseInt(req.query.startIndex, 10);
         }
 
-        let count = 0;
+        let count = result.length;
         if (req.query.count !== undefined && typeof req.query.count === 'string') {
-            count = parseInt(req.query.count, 10);
+            count = parseInt(req.query.count, 10) === 0? result.length: parseInt(req.query.count, 10);
         }
 
-        res.status(200).send({"games":result});
+        // process some of the data to match the expected response format
+        for (const game of result) {
+            // mysql can generate a string representation of json array. So need to parse the provided string into an actual json value
+            if (typeof game.platformIds === 'string') {
+                game.platformIds = JSON.parse(game.platformIds);
+            }
+
+            // mysql returns the result of the aggregate average rating column as strings so it needs to be parsed into a number
+            if (typeof game.rating === 'string') {
+                game.rating = parseFloat(game.rating);
+            }
+        }
+        res.status(200).send({"games":result.slice(startIndex, count), "count":resultCount});
 
     } catch (err) {
         Logger.error(err);

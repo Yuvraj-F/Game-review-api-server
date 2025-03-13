@@ -24,7 +24,7 @@ const sortByMap = {
 const getAll = async(updates: GameQuery): Promise<Game[]> => {
     Logger.info(`Retrieving all games from the database based on provided parameters: ${JSON.stringify(updates)}`);
 
-    let query = `select game.id as gameId, title, genre_id as genreId, creation_date as creationDate, creator_id as creatorId, price, first_name as creatorFirstName, last_name as creatorLastName, coalesce(truncate(avg(rating), 1), 0) as rating, JSON_ARRAYAGG(platform_id) as platformIds`;
+    let query = `select game.id as gameId, title, genre_id as genreId, creation_date as creationDate, creator_id as creatorId, price, first_name as creatorFirstName, last_name as creatorLastName, cast(coalesce(avg(rating), 0) as dec(3,1)) as rating, json_arrayagg(distinct platform_id) as platformIds`;
     query += ` from game join user on game.creator_id = user.id`;
     query += ` left join game_review on game.id = game_review.game_id`;
     query += ` join game_platforms on game.id = game_platforms.game_id`;
