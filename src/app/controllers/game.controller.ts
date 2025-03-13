@@ -18,9 +18,6 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         return;
     }
 
-    // let startIndex; // number of items to skip from results. removes items from the head
-    // let count; // number of items to include in  result. removes items from the tail
-    // let q; // only include games with q in their name or description LIKE %q%
     // let genreIds; // only include games that match one of genreIds
     // let price; // only include games <= price
     // let platformIds; // only include games released on platformId
@@ -35,7 +32,7 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         const params = {
             q: '',
             genreIds: [-1],
-            price: 0,
+            price: Number.POSITIVE_INFINITY,
             platformIds: [-1],
             creatorId: -1,
             reviewerId: -1,
@@ -67,14 +64,27 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
 
         if (req.query.genreIds !== undefined) {
             params.genreIds = [];
+            const validGenreIds = new Set((await Game.getAllGenres()).map(genre => genre.id));
             if (Array.isArray(req.query.genreIds)) {
+                Logger.info(`Valid id if branch`)
                 for (const id of req.query.genreIds) {
-                    if (typeof id === 'string') {
+                    if (typeof id === 'string' && validGenreIds.has(parseInt(id, 10))) {
                         params.genreIds.push(parseInt(id, 10));
+                    } else {
+                        res.statusMessage = `Bad Request: No genre with id: ${id}`;
+                        res.status(400).send();
+                        return;
                     }
                 }
             } else if (typeof req.query.genreIds === 'string') {
-                params.genreIds.push(parseInt(req.query.genreIds, 10));
+                const id = parseInt(req.query.genreIds, 10);
+                if (validGenreIds.has(id)) {
+                    params.genreIds.push(id);
+                } else {
+                    res.statusMessage = `Bad Request: No genre with id: ${req.query.genreIds}`;
+                    res.status(400).send();
+                    return;
+                }
             }
         }
 

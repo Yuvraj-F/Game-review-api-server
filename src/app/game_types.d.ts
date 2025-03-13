@@ -41,3 +41,10 @@ type GameQuery = {
 
     wishlistedByMe: boolean,
 }
+
+type Genre = {
+
+    id: number,
+
+    name: string
+}

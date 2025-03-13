@@ -29,12 +29,27 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
     query += ` left join game_review on game.id = game_review.game_id`;
     query += ` join game_platforms on game.id = game_platforms.game_id`;
 
-    const values = [];
+    // add where clause
+    query += ` where (title like '%${updates.q}%' or description like '%${updates.q}%')`;
+    if (updates.genreIds[0] !== -1) {
+        query += ` and genre_id in (${updates.genreIds})`;
+    }
 
     query += ` group by game.id`;
-    query += ` order by creation_date asc`;
+    query += ` order by ${sortByMap[updates.sortBy as keyof typeof sortByMap]}`;
 
+    try {
+        const [rows] = await getPool().query(query);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
 
+const getAllGenres = async(): Promise<Genre[]> => {
+    Logger.info(`Retrieving all genres from the database`);
+    const query = `select * from genre`;
     try {
         const [rows] = await getPool().query(query);
         return rows;
@@ -56,4 +71,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll};
+export {getAll, getAllGenres};
