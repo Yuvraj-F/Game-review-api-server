@@ -17,7 +17,7 @@ const getName = async(id:number): Promise<{image_filename:string}[]> => {
     }
 }
 
-const update = async(id:number, filename:string): Promise<ResultSetHeader> => {
+const link = async(id:number, filename:string): Promise<ResultSetHeader> => {
     Logger.info(`Updating user ${id} image name in the database`);
 
     const query = `update user set image_filename=? where id=?`;
@@ -30,7 +30,7 @@ const update = async(id:number, filename:string): Promise<ResultSetHeader> => {
     }
 }
 
-const remove = async(id:number): Promise<ResultSetHeader> => {
+const unlink = async(id:number): Promise<ResultSetHeader> => {
     Logger.info(`deleting user ${id} image name from the database`);
 
     const query = `update user set image_filename=NULL where id=?`;
@@ -43,9 +43,10 @@ const remove = async(id:number): Promise<ResultSetHeader> => {
     }
 }
 
-async function load(fileName: string): Promise<Buffer> {
-    Logger.info(`Loading image ${fileName} from storage`);
-    return await fs.readFile(imageDirectory + fileName);
+async function load(filename: string): Promise<Buffer> {
+    Logger.info(`Loading image ${filename} from storage`);
+
+    return await fs.readFile(imageDirectory + filename);
 }
 
 async function save(oldName:string, newName:string, imageData:Buffer, ): Promise<void> {
@@ -58,4 +59,16 @@ async function save(oldName:string, newName:string, imageData:Buffer, ): Promise
     return;
 }
 
-export{getName, update, remove, load, save};
+async function remove(filename: string): Promise<void> {
+    Logger.info(`Deleting image ${filename} from storage`);
+    try {
+        await fs.unlink(imageDirectory + filename);
+        Logger.info(`File ${filename} deleted successfully`);
+        return;
+    } catch (err) {
+        Logger.error(err);
+        throw err;
+    }
+}
+
+export{getName, link, unlink, load, save, remove};
