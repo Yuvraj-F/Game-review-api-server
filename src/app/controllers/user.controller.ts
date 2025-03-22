@@ -1,6 +1,6 @@
 import {Request, Response} from "express";
-import {generate} from "rand-token";
 import Logger from '../../config/logger';
+import {generate} from "rand-token";
 import {validate} from '../services/validator';
 import {hash, compare} from '../services/passwords';
 import * as schemas from '../resources/schemas.json'
@@ -122,7 +122,6 @@ const logout = async (req: Request, res: Response): Promise<void> => {
 
     } catch (err) {
         Logger.error(err);
-        res.statusMessage = "Internal Server Error";
         res.status(500).send();
         return;
     }

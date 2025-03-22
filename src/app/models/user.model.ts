@@ -28,19 +28,6 @@ const getOne = async(id:number): Promise<User[]> => {
     }
 }
 
-const getAll = async(): Promise<User[]> => {
-    Logger.info(`Getting all users from the database`);
-
-    const query = `select * from user`;
-    try {
-       const [rows] = await getPool().query(query);
-       return rows;
-    } catch (err) {
-        Logger.error(err.sql);
-        throw err;
-    }
-}
-
 const alter = async(id:number, attributes:string[], values:string[]): Promise<void> => {
     Logger.info(`updating user details for user ${id} in the database`);
 
@@ -110,4 +97,4 @@ const authenticate = async(token:string): Promise<User[]> => {
 }
 
 
-export{insert, getOne, getAll, alter, getByEmail, login, logout, authenticate};
+export{insert, getOne, alter, getByEmail, login, logout, authenticate};
