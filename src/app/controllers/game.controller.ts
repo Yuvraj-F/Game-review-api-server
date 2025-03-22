@@ -159,7 +159,89 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
             }
         }
         res.status(200).send({"games":result.slice(startIndex, startIndex+count), "count":resultCount});
+        return;
+    } catch (err) {
+        Logger.error(err);
+        res.statusMessage = "Internal Server Error";
+        res.status(500).send();
+    }
+}
 
+const addGame = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`POST game to the database based on provided parameters: ${JSON.stringify(req.body)}`);
+
+    const params = {
+        title: req.body.title,
+        description: req.body.description,
+        genreId: req.body.genreId,
+        price: parseInt(req.body.price, 10),
+        platformIds: req.body.platformIds,
+        creatorId: -1,
+    }
+
+    // authenticate user
+    const userList =  await getAuthenticatedUser(req);
+    if (userList.length !== 0) {
+        params.creatorId = userList[0].id;
+    } else {
+        res.statusMessage = `Unauthorized`;
+        res.status(401).send();
+        return;
+    }
+
+    const validation = await validate(
+        schemas.game_post,
+        req.body
+    );
+    if (validation !== true) {
+        res.statusMessage = `Bad Request: ${validation.toString()}`;
+        res.status(400).send();
+        return;
+    }
+
+    try {
+
+        // check unique title
+        const existingTitles = new Set((await Game.getAllTitles()).map(game => game.title));
+        if (existingTitles.has(params.title)) {
+            res.statusMessage = `Forbidden. Game with title already exists`;
+            res.status(403).send();
+            return;
+        }
+
+        // check valid genreId
+        const validGenreIds = new Set((await Game.getAllGenres()).map(genre => genre.id));
+        if (validGenreIds.has(params.genreId)) {
+            params.genreId = parseInt(params.genreId, 10);
+        } else {
+            res.statusMessage = `Bad Request: No genre with id: ${params.genreId}`;
+            res.status(400).send();
+            return;
+        }
+
+        // check valid platforms
+        const validPlatformIds = new Set((await Game.getAllPlatforms()).map(platform => platform.id));
+        const platformIds = [];
+        for (const id of params.platformIds) {
+            if (validPlatformIds.has(parseInt(id, 10))) {
+                platformIds.push(parseInt(id, 10));
+            } else {
+                res.statusMessage = `Bad Request: No platform with id: ${id}`;
+                res.status(400).send();
+                return;
+            }
+        }
+        params.platformIds = platformIds;
+
+        // insert game
+        const result = await Game.insertGame(params);
+        const gameId = result.insertId;
+
+        // update game_platforms
+        await Game.insertGamePlatforms({platformIds, gameId});
+        res.statusMessage = "Created";
+        res.status(201).send({"gameId": gameId});
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -177,18 +259,6 @@ const getGame = async(req: Request, res: Response): Promise<void> => {
         res.status(500).send();
     }
 }
-
-const addGame = async(req: Request, res: Response): Promise<void> => {
-    try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
-    } catch (err) {
-        Logger.error(err);
-        res.statusMessage = "Internal Server Error";
-        res.status(500).send();
-    }
-}
-
 
 const editGame = async(req: Request, res: Response): Promise<void> => {
     try {

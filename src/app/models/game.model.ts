@@ -62,7 +62,6 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
     query += ` group by game.id`;
     query += ` order by ${sortByMap[updates.sortBy as keyof typeof sortByMap]}`;
 
-    Logger.info(query);
     try {
         const [rows] = await getPool().query(query);
         return rows;
@@ -73,7 +72,8 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
 }
 
 const getAllGenres = async(): Promise<{id:number, name:string}[]> => {
-    Logger.info(`Retrieving all genres from the database`);
+    Logger.info(`Retrieving all game genres from the database`);
+
     const query = `select * from genre`;
     try {
         const [rows] = await getPool().query(query);
@@ -85,7 +85,8 @@ const getAllGenres = async(): Promise<{id:number, name:string}[]> => {
 }
 
 const getAllPlatforms = async(): Promise<{id:number, name:string}[]> => {
-    Logger.info(`Retrieving all platforms from the database`);
+    Logger.info(`Retrieving all game platforms from the database`);
+
     const query = `select * from platform`;
     try {
         const [rows] = await getPool().query(query);
@@ -96,8 +97,54 @@ const getAllPlatforms = async(): Promise<{id:number, name:string}[]> => {
     }
 }
 
+const getAllTitles = async(): Promise<{title:string}[]> => {
+    Logger.info(`Retrieving all game titles from the database`);
+
+    const query = `select title from game`;
+    try {
+        const [rows] = await getPool().query(query);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const insertGame = async(updates: {title:string, description:string, genreId:number, price:number, platformIds:number[], creatorId:number}): Promise<ResultSetHeader> => {
+    Logger.info(`Adding game ${updates.title} to database`);
+
+    const query = `insert into game (title, description, creation_date, creator_id, genre_id, price) values (?,?,CURRENT_TIMESTAMP,?,?,?)`;
+    try {
+        const [rows] = await getPool().query(query, [updates.title, updates.description, updates.creatorId, updates.genreId, updates.price]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const insertGamePlatforms = async(updates: {platformIds:number[], gameId:number}): Promise<void> => {
+    Logger.info(`Adding platforms for game ${updates.gameId} to database`);
+
+    let query = ` insert into game_platforms (game_id, platform_id) values`;
+    let i;
+    for (i=0; i<updates.platformIds.length-1; i++) {
+        query += ` (${updates.gameId},?),`;
+    }
+    query += ` (${updates.gameId}, ?)`;
+
+    try {
+        await getPool().query(query, [...updates.platformIds]);
+        return;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
 const template = async(): Promise<void> => {
     Logger.info(``);
+
     const query = ``;
     try {
         const [rows] = await getPool().query(query);
@@ -108,4 +155,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll, getAllGenres, getAllPlatforms};
+export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms};
