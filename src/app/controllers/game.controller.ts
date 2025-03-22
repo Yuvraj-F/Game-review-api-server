@@ -313,9 +313,11 @@ const deleteGame = async(req: Request, res: Response): Promise<void> => {
 
 
 const getGenres = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`GET all genres`);
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        const genres = (await Game.getAllGenres()).map(({id, name}) => ({genreId:id, name}));
+        res.status(200).send(genres);
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -324,9 +326,11 @@ const getGenres = async(req: Request, res: Response): Promise<void> => {
 }
 
 const getPlatforms = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`GET all platforms`);
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        const platforms = (await Game.getAllPlatforms()).map(({id, name}) => ({platformId:id, name}));
+        res.status(200).send(platforms);
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
