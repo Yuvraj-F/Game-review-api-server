@@ -1,8 +1,10 @@
 import {Request, Response} from "express";
 import Logger from "../../config/logger";
+import {generate} from "rand-token";
+import {isAuthenticated, getAuthenticatedUser} from "./user.controller";
 import * as Image from "../models/user.image.model";
-import * as User from '../models/user.model'
 
+const validImageTypes = ["png", "jpeg", "gif"];
 
 const getImage = async (req: Request, res: Response): Promise<void> => {
     Logger.info(`GET user ${req.params.id} profile image`);
@@ -39,9 +41,69 @@ const getImage = async (req: Request, res: Response): Promise<void> => {
 }
 
 const setImage = async (req: Request, res: Response): Promise<void> => {
+    Logger.info(`PUT user ${req.params.id} profile image`);
+
+    // validate id parameter
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        let user;
+        const userList =  await getAuthenticatedUser(req);
+        if (userList.length !== 0) {
+            user = userList[0];
+        } else {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+
+        // compare parameter id with authenticated id
+        if (user.id !== id) {
+            res.statusMessage = `Forbidden. Cannot change another user's profile photo`;
+            res.status(403).send();
+            return;
+        }
+
+        // get image name of user's current profile picture
+        const images = await Image.getName(id);
+        const existingImageName = images[0].image_filename;
+
+        // validate image type from request header
+        const newImageType = await getContentType(req);
+        if(!validImageTypes.includes(newImageType)) {
+            res.statusMessage = `Bad Request: photo must be image/jpeg, image/png, image/gif type, but it was: image/${newImageType}`;
+            res.status(400).send();
+            return;
+        }
+
+        // If no rows affected then user doesn't exist. Maybe user got deleted while this method was still processing?
+        const newFilename = generate(32)+'.'+newImageType;
+        const result = await Image.update(id, newFilename);
+        if (result.affectedRows === 0) {
+            res.statusMessage = `Not Found. No user with id: ${id}`;
+            res.status(404).send();
+            return;
+        }
+
+        // save image with new generated name
+        const imageData = req.body;
+        await Image.save(existingImageName, newFilename, imageData);
+
+        if (existingImageName === null) {
+            res.statusMessage = `Created. New image created`;
+            res.status(201).send();
+            return;
+        } else {
+            res.statusMessage = `OK. Image updated`;
+            res.status(200).send();
+            return;
+        }
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -70,6 +132,14 @@ async function getImageType(filename:string): Promise<string> {
         extension = "jpeg";
     }
     return "image/" + extension;
+}
+
+/**
+ * extracts the image type from the Content-Type field in the request header
+ * @param req the http request to process
+ */
+async function getContentType(req: Request): Promise<string> {
+    return req.headers["content-type"].split("/").pop();
 }
 
 export {getImage, setImage, deleteImage}

@@ -90,7 +90,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
         }
 
         // generate auth token and login user
-        const token = generate(12);
+        const token = generate(32);
         await User.login(email, token);
         res.statusMessage = `Successfully logged in user as user: ${user.id}`;
         res.status(200).send({"userId": user.id, "token": token});
