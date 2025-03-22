@@ -31,13 +31,30 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
 
     // add where clause
     query += ` where (title like '%${updates.q}%' or description like '%${updates.q}%')`;
+
+    // genreIds
     if (updates.genreIds[0] !== -1) {
         query += ` and genre_id in (${updates.genreIds})`;
     }
 
+    // platformIds
+    if (updates.platformIds[0] !== -1) {
+        query += ` and platform_id in (${updates.platformIds})`;
+    }
+
+    // price
+    query += updates.price === Number.POSITIVE_INFINITY? `` : ` and price <= ${updates.price}`;
+
+    // creatorId
+    query += updates.creatorId === -1? `` : ` and creator_id = ${updates.creatorId}`;
+
+    // reviewerId
+    query += updates.reviewerId === -1? `` : ` and game_review.user_id = ${updates.reviewerId}`;
+
     query += ` group by game.id`;
     query += ` order by ${sortByMap[updates.sortBy as keyof typeof sortByMap]}`;
 
+    Logger.info(query);
     try {
         const [rows] = await getPool().query(query);
         return rows;
@@ -47,9 +64,21 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
     }
 }
 
-const getAllGenres = async(): Promise<Genre[]> => {
+const getAllGenres = async(): Promise<{id:number, name:string}[]> => {
     Logger.info(`Retrieving all genres from the database`);
     const query = `select * from genre`;
+    try {
+        const [rows] = await getPool().query(query);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const getAllPlatforms = async(): Promise<{id:number, name:string}[]> => {
+    Logger.info(`Retrieving all platforms from the database`);
+    const query = `select * from platform`;
     try {
         const [rows] = await getPool().query(query);
         return rows;
@@ -71,4 +100,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll, getAllGenres};
+export {getAll, getAllGenres, getAllPlatforms};

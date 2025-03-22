@@ -18,12 +18,6 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         return;
     }
 
-    // let genreIds; // only include games that match one of genreIds
-    // let price; // only include games <= price
-    // let platformIds; // only include games released on platformId
-    // let creatorId; // only include games by the creatorId
-    // let reviewerId; // only include games by the reviewerId
-    // let sortBy; // sort by given property
     // let ownedByMe; // only include games owned by user. requires auth
     // let wishlistedByMe; // only include games wishlisted by user. require auth
 
@@ -66,7 +60,6 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
             params.genreIds = [];
             const validGenreIds = new Set((await Game.getAllGenres()).map(genre => genre.id));
             if (Array.isArray(req.query.genreIds)) {
-                Logger.info(`Valid id if branch`)
                 for (const id of req.query.genreIds) {
                     if (typeof id === 'string' && validGenreIds.has(parseInt(id, 10))) {
                         params.genreIds.push(parseInt(id, 10));
@@ -90,14 +83,26 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
 
         if (req.query.platformIds !== undefined) {
             params.platformIds = [];
+            const validPlatformIds = new Set((await Game.getAllPlatforms()).map(platform => platform.id));
             if (Array.isArray(req.query.platformIds)) {
                 for (const id of req.query.platformIds) {
-                    if (typeof id === 'string') {
+                    if (typeof id === 'string' && validPlatformIds.has(parseInt(id, 10))) {
                         params.platformIds.push(parseInt(id, 10));
+                    } else {
+                        res.statusMessage = `Bad Request: No platform with id: ${id}`;
+                        res.status(400).send();
+                        return;
                     }
                 }
             } else if (typeof req.query.platformIds === 'string') {
-                params.platformIds.push(parseInt(req.query.platformIds, 10));
+                const id = parseInt(req.query.platformIds, 10);
+                if (validPlatformIds.has(id)) {
+                    params.platformIds.push(id);
+                } else {
+                    res.statusMessage = `Bad Request: No platform with id: ${req.query.platformIds}`;
+                    res.status(400).send();
+                    return;
+                }
             }
         }
 
@@ -156,7 +161,7 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
                 game.rating = parseFloat(game.rating);
             }
         }
-        res.status(200).send({"games":result.slice(startIndex, count), "count":resultCount});
+        res.status(200).send({"games":result.slice(startIndex, startIndex+count), "count":resultCount});
 
     } catch (err) {
         Logger.error(err);
