@@ -51,6 +51,14 @@ const getAll = async(updates: GameQuery): Promise<Game[]> => {
     // reviewerId
     query += updates.reviewerId === -1? `` : ` and game_review.user_id = ${updates.reviewerId}`;
 
+    if (updates.userId !== -1) {
+        // wishlistedByMe
+        query += !updates.wishlistedByMe ? `` : ` and game.id in (select game_id from wishlist where user_id = ${updates.userId})`;
+
+        // ownedByMe
+        query += !updates.ownedByMe ? `` : ` and game.id in (select game_id from owned where user_id = ${updates.userId})`;
+    }
+
     query += ` group by game.id`;
     query += ` order by ${sortByMap[updates.sortBy as keyof typeof sortByMap]}`;
 

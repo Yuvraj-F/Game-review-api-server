@@ -40,4 +40,6 @@ type GameQuery = {
     ownedByMe: boolean,
 
     wishlistedByMe: boolean,
+
+    userId: number
 }

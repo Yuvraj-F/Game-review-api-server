@@ -18,9 +18,6 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         return;
     }
 
-    // let ownedByMe; // only include games owned by user. requires auth
-    // let wishlistedByMe; // only include games wishlisted by user. require auth
-
     try {
 
         const params = {
@@ -109,7 +106,7 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         if (req.query.ownedByMe !== undefined) {
             params.ownedByMe = req.query.ownedByMe === 'true';
 
-            if (params.ownedByMe === true && params.userId < 0) {
+            if (params.ownedByMe === true && params.userId === -1) {
                 const userList =  await getAuthenticatedUser(req);
                 if (userList.length !== 0) {
                     params.userId = userList[0].id;
@@ -124,7 +121,7 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
         if (req.query.wishlistedByMe !== undefined) {
             params.wishlistedByMe = req.query.wishlistedByMe === 'true';
 
-            if (params.wishlistedByMe === true && params.userId < 0) {
+            if (params.wishlistedByMe === true && params.userId === -1) {
                 const userList =  await getAuthenticatedUser(req);
                 if (userList.length !== 0) {
                     params.userId = userList[0].id;
