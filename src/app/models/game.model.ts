@@ -21,7 +21,7 @@ const sortByMap = {
 // where game.id in (select game_id from owned where user_id=2) and game.id in (select game_id from wishlist where user_id=2)
 // group by game.id
 // order by creation_date asc
-const getAll = async(updates: GameQuery): Promise<Game[]> => {
+const getAll = async(updates: GameQuery): Promise<GameSearchResponse[]> => {
     Logger.info(`Retrieving all games from the database based on provided parameters: ${JSON.stringify(updates)}`);
 
     let query = `select game.id as gameId, title, genre_id as genreId, creation_date as creationDate, creator_id as creatorId, price, first_name as creatorFirstName, last_name as creatorLastName, cast(coalesce(avg(rating), 0) as dec(3,1)) as rating, json_arrayagg(distinct platform_id) as platformIds`;
@@ -142,6 +142,29 @@ const insertGamePlatforms = async(updates: {platformIds:number[], gameId:number}
     }
 }
 
+const getById = async(gameId:number): Promise<Game[]> => {
+    Logger.info(`Getting game ${gameId} from the database`);
+
+    let query = `select game.id as gameId, title, description, genre_id as genreId, creation_date as creationDate, `+
+                    `creator_id as creatorId, price, first_name as creatorFirstName, last_name as creatorLastName, `+
+                    `cast(coalesce(avg(rating), 0) as dec(3,1)) as rating, json_arrayagg(distinct platform_id) as platformIds, `+
+                    `count(distinct owned.user_id) as numberOfOwners, count(distinct wishlist.user_id) as numberOfWishlists`;
+    query += ` from game join user on game.creator_id = user.id`;
+    query += ` left join game_review on game.id = game_review.game_id`;
+    query += ` join game_platforms on game.id = game_platforms.game_id`;
+    query += ` join owned on game.id = owned.game_id`;
+    query += ` join wishlist on game.id = wishlist.game_id`;
+    query += ` where game.id = ?`;
+    // query += ` group by game.id`;
+    try {
+        const [rows] = await getPool().query(query, [gameId]);
+        return rows; // because the query creates all the columns, the correct object is returned with null values if game with id is not found
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
 const template = async(): Promise<void> => {
     Logger.info(``);
 
@@ -155,4 +178,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms};
+export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById};

@@ -145,7 +145,7 @@ const view = async (req: Request, res: Response): Promise<void> => {
         if (userList.length !== 0) {
             user = userList[0];
         } else {
-            res.statusMessage = `Not Found. No user with specified id: ${id}`;
+            res.statusMessage = `Not Found. No user with id: ${id}`;
             res.status(404).send();
             return;
         }

@@ -1,4 +1,4 @@
-type Game = {
+type GameSearchResponse = {
 
     gameId: number,
 
@@ -42,4 +42,33 @@ type GameQuery = {
     wishlistedByMe: boolean,
 
     userId: number
+}
+
+type Game = {
+
+    gameId: number,
+
+    title: string,
+
+    genreId: number,
+
+    creatorId: number,
+
+    creatorFirstName: string,
+
+    creatorLastName: string,
+
+    price: number,
+
+    rating: number,
+
+    platformIds: number[],
+
+    creationDate: string,
+
+    description: string,
+
+    numberOfOwners: number,
+
+    numberOfWishlists: number
 }

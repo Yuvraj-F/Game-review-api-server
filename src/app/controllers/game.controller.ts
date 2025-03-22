@@ -6,7 +6,7 @@ import * as schemas from '../resources/schemas.json'
 import * as Game from '../models/game.model'
 
 const getAllGames = async(req: Request, res: Response): Promise<void> => {
-    Logger.info(`GET all games based on request query parameters: ${JSON.stringify(req.query)}`);
+    Logger.info(`GET all games for query parameters: ${JSON.stringify(req.query)}`);
 
     const validation = await validate(
         schemas.game_search,
@@ -168,7 +168,7 @@ const getAllGames = async(req: Request, res: Response): Promise<void> => {
 }
 
 const addGame = async(req: Request, res: Response): Promise<void> => {
-    Logger.info(`POST game to the database based on provided parameters: ${JSON.stringify(req.body)}`);
+    Logger.info(`POST game: ${JSON.stringify(req.body)}`);
 
     const params = {
         title: req.body.title,
@@ -250,9 +250,38 @@ const addGame = async(req: Request, res: Response): Promise<void> => {
 }
 
 const getGame = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`GET game ${req.params.id}`);
+
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        let game;
+        const gameList = await Game.getById(id);
+        if (gameList.length !== 0 && gameList[0].gameId !== null) { // have to check gameId field is not null because the
+            game = gameList[0];                                     // query returns an object even if game with id is not found
+        } else {
+            res.statusMessage = `Not Found. No game with id: ${id}`;
+            res.status(404).send();
+            return;
+        }
+
+        // mysql can generate a string representation of json array. So need to parse the provided string into an actual json value
+        if (typeof game.platformIds === 'string') {
+            game.platformIds = JSON.parse(game.platformIds);
+        }
+
+        // mysql returns the result of the aggregate average rating column as strings so it needs to be parsed into a number
+        if (typeof game.rating === 'string') {
+            game.rating = parseFloat(game.rating);
+        }
+
+        res.status(200).send(game);
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
