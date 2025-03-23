@@ -2,10 +2,10 @@ import Logger from "../../config/logger";
 import {Request, Response} from "express";
 import {generate} from "rand-token";
 import {getAuthenticatedUser} from "./user.controller";
+import {validImageTypes} from "../services/storage.image"
 import * as UserImage from "../models/user.image.model";
 import * as ImageStorage from "../services/storage.image"
 
-const validImageTypes = ["png", "jpeg", "gif"];
 
 const getImage = async (req: Request, res: Response): Promise<void> => {
     Logger.info(`GET user ${req.params.id} profile image`);
@@ -54,10 +54,10 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
 
     try {
         // authenticate user
-        let user;
+        let userId;
         const userList =  await getAuthenticatedUser(req);
         if (userList.length !== 0) {
-            user = userList[0];
+            userId = userList[0].id;
         } else {
             res.statusMessage = `Unauthorized`;
             res.status(401).send();
@@ -65,7 +65,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         }
 
         // compare parameter id with authenticated id
-        if (user.id !== id) {
+        if (userId !== id) {
             res.statusMessage = `Forbidden. Cannot change another user's profile photo`;
             res.status(403).send();
             return;

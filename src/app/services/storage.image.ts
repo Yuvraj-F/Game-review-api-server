@@ -1,7 +1,9 @@
 import Logger from "../../config/logger";
 import {Request} from "express";
 import fs from "mz/fs";
+
 const imageDirectory = './storage/images/';
+const validImageTypes = ["png", "jpeg", "gif"];
 
 async function load(filename: string): Promise<Buffer> {
     Logger.info(`Loading image ${filename} from storage`);
@@ -51,4 +53,4 @@ async function getContentType(req: Request): Promise<string> {
     return req.headers["content-type"].split("/").pop();
 }
 
-export{load, save, remove, getImageType, getContentType};
+export{load, save, remove, getImageType, getContentType, validImageTypes};
