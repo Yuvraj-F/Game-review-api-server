@@ -1,8 +1,8 @@
 import Logger from "../../config/logger";
 import {Request, Response} from "express";
 import {generate} from "rand-token";
-import {isAuthenticated, getAuthenticatedUser} from "./user.controller";
-import * as Image from "../models/user.image.model";
+import {getAuthenticatedUser} from "./user.controller";
+import * as UserImage from "../models/user.image.model";
 import * as ImageStorage from "../services/storage.image"
 
 const validImageTypes = ["png", "jpeg", "gif"];
@@ -20,7 +20,7 @@ const getImage = async (req: Request, res: Response): Promise<void> => {
 
     try {
         // get image name
-        const images = await Image.getName(id);
+        const images = await UserImage.getName(id);
         if (images.length === 0 || images[0].image_filename === null) {
             res.statusMessage = `Not Found. No user with specified ID, or user has no image: ${id}`;
             res.status(404).send();
@@ -72,7 +72,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         }
 
         // get image name of user's current profile picture
-        const images = await Image.getName(id);
+        const images = await UserImage.getName(id);
         const existingImageName = images[0].image_filename;
 
         // validate image type from request header
@@ -85,7 +85,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
 
         // If no rows affected then user doesn't exist. Maybe user got deleted while this method was still processing?
         const newFilename = generate(32)+'.'+newImageType;
-        const result = await Image.link(id, newFilename);
+        const result = await UserImage.link(id, newFilename);
         if (result.affectedRows === 0) {
             res.statusMessage = `Not Found. No user with id: ${id}`;
             res.status(404).send();
@@ -143,11 +143,11 @@ const deleteImage = async (req: Request, res: Response): Promise<void> => {
         }
 
         // get image name of user's current profile picture
-        const images = await Image.getName(id);
+        const images = await UserImage.getName(id);
         const existingImageName = images[0].image_filename;
 
         // If no rows affected then user doesn't exist. Maybe user got deleted while this method was still processing?
-        const result = await Image.unlink(id);
+        const result = await UserImage.unlink(id);
         if (result.affectedRows === 0) {
             res.statusMessage = `Not Found. No user with id: ${id}`;
             res.status(404).send();

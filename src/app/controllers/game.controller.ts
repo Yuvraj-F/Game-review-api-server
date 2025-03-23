@@ -1,7 +1,7 @@
 import {Request, Response} from "express";
 import Logger from "../../config/logger";
 import {validate} from '../services/validator';
-import {isAuthenticated, getAuthenticatedUser} from "./user.controller";
+import {getAuthenticatedUser} from "./user.controller";
 import * as schemas from '../resources/schemas.json'
 import * as Game from '../models/game.model'
 

@@ -329,4 +329,4 @@ async function getAuthenticatedUser(req: Request): Promise<User[]> {
     }
 }
 
-export {register, login, logout, view, update, isAuthenticated, getAuthenticatedUser}
+export {register, login, logout, view, update, getAuthenticatedUser}
