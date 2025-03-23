@@ -3,6 +3,7 @@ import Logger from "../../config/logger";
 import {generate} from "rand-token";
 import {isAuthenticated, getAuthenticatedUser} from "./user.controller";
 import * as Image from "../models/user.image.model";
+import * as ImageStorage from "../services/storage.image"
 
 const validImageTypes = ["png", "jpeg", "gif"];
 
@@ -28,7 +29,7 @@ const getImage = async (req: Request, res: Response): Promise<void> => {
         const imageName = images[0].image_filename;
 
         // get image data
-        const imageData = await Image.load(imageName);
+        const imageData = await ImageStorage.load(imageName);
 
         const fileType = await getImageType(imageName)
         res.setHeader('Content-Type', fileType);
@@ -93,7 +94,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
 
         // save image with new generated name
         const imageData = req.body;
-        await Image.save(existingImageName, newFilename, imageData);
+        await ImageStorage.save(existingImageName, newFilename, imageData);
 
         if (existingImageName === null) {
             res.statusMessage = `Created. New image created`;
@@ -154,7 +155,7 @@ const deleteImage = async (req: Request, res: Response): Promise<void> => {
         }
 
         // delete image from storage
-        await Image.remove(existingImageName);
+        await ImageStorage.remove(existingImageName);
         res.status(200).send();
         return;
     } catch (err) {
