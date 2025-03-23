@@ -1,8 +1,6 @@
 import Logger from "../../config/logger";
 import {ResultSetHeader} from "mysql2";
 import {getPool} from "../../config/db";
-import fs from 'mz/fs';
-const imageDirectory = './storage/images/';
 
 const getName = async(id:number): Promise<{image_filename:string}[]> => {
     Logger.info(`Getting user ${id} image name from the database`);

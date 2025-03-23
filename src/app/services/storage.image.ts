@@ -1,4 +1,5 @@
 import Logger from "../../config/logger";
+import {Request} from "express";
 import fs from "mz/fs";
 const imageDirectory = './storage/images/';
 
@@ -30,4 +31,24 @@ async function remove(filename: string): Promise<void> {
     }
 }
 
-export{load, save, remove}
+/**
+ * Extract the file extension from filename. Returns jpeg if extension is jpg
+ * @param filename the filename to be processed
+ */
+async function getImageType(filename:string): Promise<string> {
+    let extension = filename.split(".").pop().toLowerCase();
+    if (extension === "jpg") {
+        extension = "jpeg";
+    }
+    return "image/" + extension;
+}
+
+/**
+ * extracts the image type from the Content-Type field in the request header
+ * @param req the http request to process
+ */
+async function getContentType(req: Request): Promise<string> {
+    return req.headers["content-type"].split("/").pop();
+}
+
+export{load, save, remove, getImageType, getContentType};

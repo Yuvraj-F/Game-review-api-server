@@ -1,5 +1,5 @@
-import {Request, Response} from "express";
 import Logger from "../../config/logger";
+import {Request, Response} from "express";
 import {generate} from "rand-token";
 import {isAuthenticated, getAuthenticatedUser} from "./user.controller";
 import * as Image from "../models/user.image.model";
@@ -31,7 +31,7 @@ const getImage = async (req: Request, res: Response): Promise<void> => {
         // get image data
         const imageData = await ImageStorage.load(imageName);
 
-        const fileType = await getImageType(imageName)
+        const fileType = await ImageStorage.getImageType(imageName)
         res.setHeader('Content-Type', fileType);
         res.status(200).send(imageData);
     } catch (err) {
@@ -76,7 +76,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         const existingImageName = images[0].image_filename;
 
         // validate image type from request header
-        const newImageType = await getContentType(req);
+        const newImageType = await ImageStorage.getContentType(req);
         if(!validImageTypes.includes(newImageType)) {
             res.statusMessage = `Bad Request: photo must be image/jpeg, image/png, image/gif type, but it was: image/${newImageType}`;
             res.status(400).send();
@@ -163,26 +163,6 @@ const deleteImage = async (req: Request, res: Response): Promise<void> => {
         res.statusMessage = "Internal Server Error";
         res.status(500).send();
     }
-}
-
-/**
- * Extract the file extension from filename. Returns jpeg if extension is jpg
- * @param filename the filename to be processed
- */
-async function getImageType(filename:string): Promise<string> {
-    let extension = filename.split(".").pop().toLowerCase();
-    if (extension === "jpg") {
-        extension = "jpeg";
-    }
-    return "image/" + extension;
-}
-
-/**
- * extracts the image type from the Content-Type field in the request header
- * @param req the http request to process
- */
-async function getContentType(req: Request): Promise<string> {
-    return req.headers["content-type"].split("/").pop();
 }
 
 export {getImage, setImage, deleteImage}
