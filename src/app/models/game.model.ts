@@ -203,13 +203,67 @@ const remove = async(gameId:number): Promise<ResultSetHeader> => {
     }
 }
 
-const removeGamePlatforms = async(gameId:number): Promise<ResultSetHeader> => {
+const removeAllGamePlatforms = async(gameId:number): Promise<ResultSetHeader> => {
     Logger.info(`Removing platforms for game ${gameId} from database`);
 
     const query = `delete from game_platforms where game_id=?`;
 
     try {
         const [rows] =await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const removeGamePlatform = async(gameId:number, platformId:number): Promise<ResultSetHeader> => {
+    Logger.info(`Removing platforms for game ${gameId} from database`);
+
+    const query = `delete from game_platforms where game_id=? and platform_id=?`;
+
+    try {
+        const [rows] =await getPool().query(query, [gameId, platformId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const alter = async(gameId:number, updates: {title:string, description:string, genreId:number, price:number}): Promise<ResultSetHeader> => {
+    Logger.info(`Updating game ${gameId}`);
+
+    let query = `update game set`;
+    const values = [];
+
+    if (updates.title !== ""){
+        query += ` title=?,`;
+        values.push(updates.title);
+    }
+
+    if (updates.description !== ""){
+        query += ` description=?,`;
+        values.push(updates.description);
+    }
+
+    if (updates.genreId !== -1){
+        query += ` genre_id=?,`;
+        values.push(updates.genreId);
+    }
+
+    if (updates.price !== -1){
+        query += ` price=?`;
+        values.push(updates.price);
+    }
+
+    // Remove the trailing comma (if any) before the WHERE clause
+    query = query.endsWith(',') ? query.slice(0, -1) : query;
+
+    query += ` where id=?`;
+    values.push(gameId);
+    try {
+        const [rows] = await getPool().query(query, values);
         return rows;
     } catch (err) {
         Logger.error(err.sql);
@@ -230,4 +284,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatforms};
+export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatform, removeAllGamePlatforms, alter};

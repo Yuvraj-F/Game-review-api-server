@@ -219,6 +219,12 @@ const update = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
+        // return if request body is empty
+        if (Object.keys(req.body).length === 0) {
+            res.status(200).send();
+            return;
+        }
+
         // create arrays that contain the attribute names and values
         const attributes = []
         const values = []

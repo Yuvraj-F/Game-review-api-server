@@ -237,7 +237,7 @@ const addGame = async(req: Request, res: Response): Promise<void> => {
         const result = await Game.insertGame(params);
         const gameId = result.insertId;
 
-        // update game_platforms
+        // add game_platforms
         await Game.insertGamePlatforms({platformIds, gameId});
         res.statusMessage = "Created";
         res.status(201).send({"gameId": gameId});
@@ -290,9 +290,153 @@ const getGame = async(req: Request, res: Response): Promise<void> => {
 }
 
 const editGame = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`PATCH game: ${req.params.id}`);
+
+    const params = {
+        title: "",
+        description: "",
+        genreId: -1,
+        price: -1,
+    }
+    let platformIdsAdd = [-1];
+    let platformIdsRemove = [-1];
+
+    const gameId = parseInt(req.params.id, 10);
+    if (Number.isNaN(gameId)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
+    const validation = await validate(
+        schemas.game_patch,
+        req.body
+    );
+    if (validation !== true) {
+        res.statusMessage = `Bad Request: ${validation.toString()}`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        let userId;
+        const userList =  await getAuthenticatedUser(req);
+        if (userList.length !== 0) {
+            userId = userList[0].id;
+        } else {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+
+        // return if request body is empty
+        if (Object.keys(req.body).length === 0) {
+            res.status(200).send();
+            return;
+        }
+
+        // get game to be edited
+        let game;
+        const gameList = await Game.getById(gameId);
+        if (gameList.length !== 0 && gameList[0].gameId !== null) { // have to check gameId field is not null because the
+            game = gameList[0];// query returns an object even if game with id is not found
+            if (typeof game.platformIds === 'string') {
+                game.platformIds = JSON.parse(game.platformIds);
+            }
+        } else {
+            res.statusMessage = `Not Found. No game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+
+        // validate user is the creator of the game to edit
+        if (userId !== game.creatorId) {
+            res.statusMessage = `Forbidden. Only the creator of a game may change it`;
+            res.status(403).send();
+            return;
+        }
+
+        // check unique title
+        if ("title" in req.body) {
+            const newTitle = req.body.title;
+            const existingTitles = new Set((await Game.getAllTitles()).map(gameTitles => gameTitles.title));
+            if (existingTitles.has(newTitle)) {
+                res.statusMessage = `Forbidden. Game with title already exists`;
+                res.status(403).send();
+                return;
+            } else {
+                params.title = newTitle;
+            }
+        }
+
+        // check valid genreId
+        if ("genreId" in req.body) {
+            const newGenreId = req.body.genreId;
+            const validGenreIds = new Set((await Game.getAllGenres()).map(genre => genre.id));
+            if (!validGenreIds.has(newGenreId)) {
+                res.statusMessage = `Bad Request: No genre with id: ${params.genreId}`;
+                res.status(400).send();
+                return;
+            } else {
+                params.genreId = parseInt(newGenreId, 10);
+            }
+        }
+
+        // check valid platforms
+        if ("platformIds" in req.body) {
+            const newPlatformIds = Array.isArray(req.body.platformIds) ? req.body.platformIds : [];
+            const validPlatformIds = new Set((await Game.getAllPlatforms()).map(platform => platform.id));
+
+            // platforms to add
+            const platformIdsToAdd = [];
+            for (const id of newPlatformIds) {
+                if (!validPlatformIds.has(parseInt(id, 10))) {
+                    res.statusMessage = `Bad Request: No platform with id: ${id}`;
+                    res.status(400).send();
+                    return;
+                } else if (!game.platformIds.includes(parseInt(id, 10))) {
+                    platformIdsToAdd.push(parseInt(id, 10));
+                }
+            }
+
+            // platforms to remove
+            const platformIdsToRemove = game.platformIds.filter(platformId => !newPlatformIds.includes(platformId));
+
+            platformIdsAdd = platformIdsToAdd;
+            platformIdsRemove = platformIdsToRemove;
+        }
+
+        if ("price" in req.body) {
+            params.price = parseInt(req.body.price, 10);
+        }
+
+        if ("description" in req.body) {
+            params.description = req.body.description;
+        }
+
+        // update game
+        const result = await Game.alter(gameId, params);
+        if (result.affectedRows === 0) {
+            res.statusMessage = `Not Found. No game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+
+        // add game_platforms
+        if (platformIdsAdd[0] !== -1 && platformIdsAdd.length !== 0) {
+            await Game.insertGamePlatforms({platformIds:platformIdsAdd, gameId});
+        }
+
+        // remove game platforms
+        if (platformIdsRemove[0] !== -1 && platformIdsRemove.length !== 0) {
+            for (const platformId of platformIdsRemove) {
+                await Game.removeGamePlatform(gameId, platformId);
+            }
+        }
+
+        res.status(200).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -339,7 +483,7 @@ const deleteGame = async(req: Request, res: Response): Promise<void> => {
         }
 
         // remove game platforms. Might not be needed to match spec. But reference server does this.
-        const platformResult = await Game.removeGamePlatforms(gameId);
+        const platformResult = await Game.removeAllGamePlatforms(gameId);
         if (platformResult.affectedRows === 0) {
             res.statusMessage = `Not Found. No platform for game with id: ${gameId}`;
             res.status(404).send();
@@ -353,6 +497,8 @@ const deleteGame = async(req: Request, res: Response): Promise<void> => {
             res.status(404).send();
             return;
         }
+
+        res.status(200).send();
         return;
     } catch (err) {
         Logger.error(err);

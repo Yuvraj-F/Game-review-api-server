@@ -31,12 +31,12 @@ const getOne = async(id:number): Promise<User[]> => {
 const alter = async(id:number, attributes:string[], values:string[]): Promise<void> => {
     Logger.info(`updating user details for user ${id} in the database`);
 
-    let query = `update user set `;
+    let query = `update user set`;
     let i;
     for (i=0; i<attributes.length-1; i++) {
-        query += `${attributes[i]} = ?, `;
+        query += ` ${attributes[i]} = ?,`;
     }
-    query += `${attributes[i]} = ? where id = ?`;
+    query += ` ${attributes[i]} = ? where id = ?`;
     try {
         await getPool().query(query, [...values, id]);
         return;
