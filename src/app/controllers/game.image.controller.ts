@@ -3,7 +3,7 @@ import {Request, Response} from "express";
 import {generate} from "rand-token";
 import {getAuthenticatedUser} from "./user.controller";
 import {validImageTypes} from "../services/storage.image"
-import * as GameImage from "../models/games.image.model"
+import * as GameImage from "../models/game.image.model"
 import * as ImageStorage from "../services/storage.image"
 import * as Game from "../models/game.model";
 
@@ -51,6 +51,7 @@ const setImage = async (req: Request, res: Response): Promise<void> => {
         res.status(400).send();
         return;
     }
+
     try {
         // authenticate user
         let userId;

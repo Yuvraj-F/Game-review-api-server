@@ -28,17 +28,4 @@ const link = async(id:number, filename:string): Promise<ResultSetHeader> => {
     }
 }
 
-const unlink = async(id:number): Promise<ResultSetHeader> => {
-    Logger.info(`deleting user ${id} image name from the database`);
-
-    const query = `update user set image_filename=NULL where id=?`;
-    try {
-        const [rows] = await getPool().query(query, [id]);
-        return rows;
-    } catch (err) {
-        Logger.error(err.sql);
-        throw err;
-    }
-}
-
-export{getName, link, unlink};
+export{getName, link};

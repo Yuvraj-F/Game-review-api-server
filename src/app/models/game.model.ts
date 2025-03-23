@@ -271,17 +271,4 @@ const alter = async(gameId:number, updates: {title:string, description:string, g
     }
 }
 
-const template = async(): Promise<void> => {
-    Logger.info(``);
-
-    const query = ``;
-    try {
-        const [rows] = await getPool().query(query);
-        return rows;
-    } catch (err) {
-        Logger.error(err.sql);
-        throw err;
-    }
-}
-
 export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatform, removeAllGamePlatforms, alter};
