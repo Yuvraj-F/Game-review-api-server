@@ -152,10 +152,9 @@ const getById = async(gameId:number): Promise<Game[]> => {
     query += ` from game join user on game.creator_id = user.id`;
     query += ` left join game_review on game.id = game_review.game_id`;
     query += ` join game_platforms on game.id = game_platforms.game_id`;
-    query += ` join owned on game.id = owned.game_id`;
-    query += ` join wishlist on game.id = wishlist.game_id`;
+    query += ` left join owned on game.id = owned.game_id`;
+    query += ` left join wishlist on game.id = wishlist.game_id`;
     query += ` where game.id = ?`;
-    // query += ` group by game.id`;
     try {
         const [rows] = await getPool().query(query, [gameId]);
         return rows; // because the query creates all the columns, the correct object is returned with null values if game with id is not found
