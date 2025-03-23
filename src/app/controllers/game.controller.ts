@@ -301,9 +301,59 @@ const editGame = async(req: Request, res: Response): Promise<void> => {
 }
 
 const deleteGame = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`DELETE game: ${req.params.id}`);
+
+    const gameId = parseInt(req.params.id, 10);
+    if (Number.isNaN(gameId)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        let userId;
+        const userList =  await getAuthenticatedUser(req);
+        if (userList.length !== 0) {
+            userId = userList[0].id;
+        } else {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+
+        // validate user is the creator of the game to delete
+        const validGames = new Set((await Game.getGameByCreator(userId)).map(game => game.id));
+        if (!validGames.has(gameId)) {
+            res.statusMessage = `Forbidden. Only the creator of a game may delete it`;
+            res.status(403).send();
+            return;
+        }
+
+        // validate game does not have reviews
+        const numReviews = (await Game.getNumReviewsById(gameId)).map(reviews => reviews.numReviews)[0];
+        if (numReviews > 0) {
+            res.statusMessage = `Forbidden. Can not delete a game with one or more reviews`;
+            res.status(403).send();
+            return;
+        }
+
+        // remove game platforms. Might not be needed to match spec. But reference server does this.
+        const platformResult = await Game.removeGamePlatforms(gameId);
+        if (platformResult.affectedRows === 0) {
+            res.statusMessage = `Not Found. No platform for game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+
+        // remove game
+        const gameResult = await Game.remove(gameId);
+        if (gameResult.affectedRows === 0) {
+            res.statusMessage = `Not Found. No game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";

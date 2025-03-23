@@ -126,7 +126,7 @@ const insertGame = async(updates: {title:string, description:string, genreId:num
 const insertGamePlatforms = async(updates: {platformIds:number[], gameId:number}): Promise<void> => {
     Logger.info(`Adding platforms for game ${updates.gameId} to database`);
 
-    let query = ` insert into game_platforms (game_id, platform_id) values`;
+    let query = `insert into game_platforms (game_id, platform_id) values`;
     let i;
     for (i=0; i<updates.platformIds.length-1; i++) {
         query += ` (${updates.gameId},?),`;
@@ -165,6 +165,59 @@ const getById = async(gameId:number): Promise<Game[]> => {
     }
 }
 
+const getGameByCreator = async(creatorId:number): Promise<{id:number}[]> => {
+    Logger.info(`Getting games by creator ${creatorId} from the database`);
+
+    const query = `select id from game where creator_id=?`;
+    try {
+        const [rows] = await getPool().query(query, [creatorId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const getNumReviewsById = async(gameId:number): Promise<{numReviews:number}[]> => {
+    Logger.info(`Getting review count for game ${gameId} from the database`);
+
+    const query = `select count(*) as numReviews from game_review where game_id=?`;
+    try {
+        const [rows] = await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const remove = async(gameId:number): Promise<ResultSetHeader> => {
+    Logger.info(`Deleting game ${gameId} from the database`);
+
+    const query = `delete from game where id=?`;
+    try {
+        const [rows] = await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const removeGamePlatforms = async(gameId:number): Promise<ResultSetHeader> => {
+    Logger.info(`Removing platforms for game ${gameId} from database`);
+
+    const query = `delete from game_platforms where game_id=?`;
+
+    try {
+        const [rows] =await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
 const template = async(): Promise<void> => {
     Logger.info(``);
 
@@ -178,4 +231,4 @@ const template = async(): Promise<void> => {
     }
 }
 
-export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById};
+export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatforms};
