@@ -14,5 +14,11 @@
   "ignore": [
     "node_modules",
     ".git"
-  ]
+  ],
+  "size": 0.07627296447753906,
+  "filesCount": 146,
+  "presets": {
+    "requestType": "http",
+    "requestUrl": "http://localhost:4941/api/v1"
+  }
 }
