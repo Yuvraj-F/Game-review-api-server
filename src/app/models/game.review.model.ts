@@ -53,22 +53,9 @@ const insert = async(gameId:number, reviewerId:number, rating:number, review:str
 const hasReviewed = async(gameId:number, userId:number): Promise<{hasReviewed:number}[]> => {
     Logger.info(`checking if user ${userId} has already reviewed game ${gameId}`);
 
-    const query = `select exists(select 1 from game_review where game_id=? and user_id=?) as hasReviewed`;
+    const query = `select exists (select 1 from game_review where game_id=? and user_id=?) as hasReviewed`;
     try {
         const [rows] = await getPool().query(query, [gameId, userId]);
-        return rows;
-    } catch (err) {
-        Logger.error(err.sql);
-        throw err;
-    }
-}
-
-const template = async(): Promise<void> => {
-    Logger.info(``);
-
-    const query = ``;
-    try {
-        const [rows] = await getPool().query(query);
         return rows;
     } catch (err) {
         Logger.error(err.sql);

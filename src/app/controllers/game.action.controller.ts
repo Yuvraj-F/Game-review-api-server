@@ -1,11 +1,64 @@
-import {Request, Response} from "express";
 import Logger from "../../config/logger";
+import {Request, Response} from "express";
+import {getAuthenticatedUser} from "./user.controller";
+import * as GameAction from "../models/game.action.model";
+import * as Game from "../models/game.model";
 
 
 const addGameToWishlist = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`POST wishlist game ${req.params.id}`);
+
+    // validate id parameter
+    const gameId = parseInt(req.params.id, 10);
+    if (Number.isNaN(gameId)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        let userId;
+        const userList =  await getAuthenticatedUser(req);
+        if (userList.length !== 0) {
+            userId = userList[0].id;
+        } else {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+
+        // validate game exists
+        const gameList = await Game.getById(gameId);
+        if (gameList.length === 0 || gameList[0].gameId === null) { // have to check gameId field is not null because the
+            res.statusMessage = `Not Found. No game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+
+        // validate user is not the creator of this game
+        const isCreatorResult = await GameAction.isCreator(gameId, userId);
+        if (isCreatorResult[0].isCreator) {
+            res.statusMessage = `Forbidden. Cannot wishlist a game you created`;
+            res.status(403).send();
+            return;
+        }
+
+        // validate user does not already own this game
+        const isOwnedResult = await GameAction.isOwned(gameId, userId);
+        if (isOwnedResult[0].isOwned) {
+            res.statusMessage = `Forbidden. Cannot wishlist a game you have marked as owned`;
+            res.status(403).send();
+            return;
+        }
+
+        // validate game is not already wishlisted before trying to wishlist. Otherwise db throws a duplicate entry error
+        const isWishlistedResult = await GameAction.isWishlisted(gameId, userId);
+        if (!isWishlistedResult[0].isWishlisted) {
+            const wishlistResult = await GameAction.insertWishlist(gameId, userId);
+        }
+        res.status(200).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -15,6 +68,12 @@ const addGameToWishlist = async(req: Request, res: Response): Promise<void> => {
 
 const removeGameFromWishlist = async(req: Request, res: Response): Promise<void> => {
     try {
+        // const wishlistResult = await GameAction.removeWishlist(gameId, userId);
+        // if (wishlistResult.affectedRows === 0) {
+        //     res.statusMessage = `Not Found. No game with id: ${gameId}`;
+        //     res.status(404).send();
+        //     return;
+        // }
         res.statusMessage = "Not Implemented";
         res.status(501).send();
     } catch (err) {
