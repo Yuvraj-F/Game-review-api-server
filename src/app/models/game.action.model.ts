@@ -18,7 +18,7 @@ const insertOwn = async(gameId:number, userId:number): Promise<ResultSetHeader> 
 const removeOwn = async(gameId:number, userId:number): Promise<ResultSetHeader> => {
     Logger.info(`Removing game ${gameId} from owned for user ${userId}`);
 
-    const query = `delete from owned where gameId=? and user_id=?`;
+    const query = `delete from owned where game_id=? and user_id=?`;
     try {
         const [rows] = await getPool().query(query, [gameId, userId]);
         return rows;
@@ -44,7 +44,7 @@ const insertWishlist = async(gameId:number, userId:number): Promise<ResultSetHea
 const removeWishlist = async(gameId:number, userId:number): Promise<ResultSetHeader> => {
     Logger.info(`Removing game ${gameId} from wishlist of user ${userId}`);
 
-    const query = `delete from wishlist where gameId=? and user_id=?`;
+    const query = `delete from wishlist where game_id=? and user_id=?`;
     try {
         const [rows] = await getPool().query(query, [gameId, userId]);
         return rows;
