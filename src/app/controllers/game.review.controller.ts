@@ -53,8 +53,14 @@ const addGameReview = async(req: Request, res: Response): Promise<void> => {
         return;
     }
 
-    if (typeof req.body.rating === "string"){
-        const rating = parseInt(req.body.rating, 10);
+    let rating;
+    if (typeof req.body.rating === "number"){
+        rating = parseInt(req.body.rating, 10);
+    }
+
+    let review = "";
+    if (typeof req.body.review === "string") {
+        review = req.body.review;
     }
 
     try {
@@ -66,12 +72,6 @@ const addGameReview = async(req: Request, res: Response): Promise<void> => {
         } else {
             res.statusMessage = `Unauthorized`;
             res.status(401).send();
-            return;
-        }
-
-        // return if request body is empty
-        if (Object.keys(req.body).length === 0) {
-            res.status(200).send();
             return;
         }
 
@@ -101,11 +101,10 @@ const addGameReview = async(req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // // add review to database
-        // await Review.insert(gameId, userId, rating, review)
-
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // add review to database
+        await Review.insert(gameId, userId, rating, review)
+        res.status(201).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";

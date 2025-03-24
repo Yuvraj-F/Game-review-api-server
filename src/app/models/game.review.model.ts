@@ -55,7 +55,7 @@ const hasReviewed = async(gameId:number, userId:number): Promise<{hasReviewed:nu
 
     const query = `select exists(select 1 from game_review where game_id=? and user_id=?) as hasReviewed`;
     try {
-        const [rows] = await getPool().query(query);
+        const [rows] = await getPool().query(query, [gameId, userId]);
         return rows;
     } catch (err) {
         Logger.error(err.sql);
