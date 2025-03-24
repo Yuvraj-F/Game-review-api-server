@@ -104,6 +104,7 @@ const removeGameFromWishlist = async(req: Request, res: Response): Promise<void>
             return;
         }
         res.status(200).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
@@ -168,9 +169,44 @@ const addGameToOwned = async(req: Request, res: Response): Promise<void> => {
 }
 
 const removeGameFromOwned = async(req: Request, res: Response): Promise<void> => {
+    Logger.info(`DELETE own game ${req.params.id}`);
+
+    // validate id parameter
+    const gameId = parseInt(req.params.id, 10);
+    if (Number.isNaN(gameId)) {
+        res.statusMessage = `Bad Request: Id must be an integer`;
+        res.status(400).send();
+        return;
+    }
+
     try {
-        res.statusMessage = "Not Implemented";
-        res.status(501).send();
+        // authenticate user
+        let userId;
+        const userList =  await getAuthenticatedUser(req);
+        if (userList.length !== 0) {
+            userId = userList[0].id;
+        } else {
+            res.statusMessage = `Unauthorized`;
+            res.status(401).send();
+            return;
+        }
+
+        // validate game exists
+        const gameList = await Game.getById(gameId);
+        if (gameList.length === 0 || gameList[0].gameId === null) { // have to check gameId field is not null because the
+            res.statusMessage = `Not Found. No game with id: ${gameId}`;
+            res.status(404).send();
+            return;
+        }
+
+        const ownedResult = await GameAction.removeOwn(gameId, userId);
+        if (ownedResult.affectedRows === 0) {
+            res.statusMessage = `Forbidden. Cannot unmark a game you do not currently own`;
+            res.status(403).send();
+            return;
+        }
+        res.status(200).send();
+        return;
     } catch (err) {
         Logger.error(err);
         res.statusMessage = "Internal Server Error";
