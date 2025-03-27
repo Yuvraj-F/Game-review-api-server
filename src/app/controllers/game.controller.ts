@@ -482,13 +482,14 @@ const deleteGame = async(req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // remove game platforms. Might not be needed to match spec. But reference server does this.
-        const platformResult = await Game.removeAllGamePlatforms(gameId);
-        if (platformResult.affectedRows === 0) {
-            res.statusMessage = `Not Found. No platform for game with id: ${gameId}`;
-            res.status(404).send();
-            return;
-        }
+        // remove game references in game_platforms
+        await Game.removeAllGamePlatforms(gameId);
+
+        // remove game references in owned
+        await Game.removeAllOwned(gameId);
+
+        // remove game references in wishlist
+        await Game.removeAllWishlisted(gameId);
 
         // remove game
         const gameResult = await Game.remove(gameId);
