@@ -217,8 +217,36 @@ const removeAllGamePlatforms = async(gameId:number): Promise<ResultSetHeader> =>
     }
 }
 
+const removeAllOwned = async(gameId:number): Promise<ResultSetHeader> => {
+    Logger.info(`Removing game ${gameId} from owned in the database`);
+
+    const query = `delete from owned where game_id=?`;
+
+    try {
+        const [rows] =await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
+const removeAllWishlisted = async(gameId:number): Promise<ResultSetHeader> => {
+    Logger.info(`Removing game ${gameId} from wishlisted in the database`);
+
+    const query = `delete from wishlist where game_id=?`;
+
+    try {
+        const [rows] =await getPool().query(query, [gameId]);
+        return rows;
+    } catch (err) {
+        Logger.error(err.sql);
+        throw err;
+    }
+}
+
 const removeGamePlatform = async(gameId:number, platformId:number): Promise<ResultSetHeader> => {
-    Logger.info(`Removing platforms for game ${gameId} from database`);
+    Logger.info(`Removing platform for game ${gameId} from database`);
 
     const query = `delete from game_platforms where game_id=? and platform_id=?`;
 
@@ -271,4 +299,4 @@ const alter = async(gameId:number, updates: {title:string, description:string, g
     }
 }
 
-export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatform, removeAllGamePlatforms, alter};
+export {getAll, getAllGenres, getAllPlatforms, getAllTitles, insertGame, insertGamePlatforms, getById, remove, getGameByCreator, getNumReviewsById, removeGamePlatform, removeAllGamePlatforms, removeAllOwned, removeAllWishlisted, alter};
